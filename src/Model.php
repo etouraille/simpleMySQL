@@ -19,7 +19,7 @@ class Model
 
     }
 
-    public function setParams($host,$login,$pass,$base)
+    public static function setParams($host,$login,$pass,$base)
     {
         self::$host = $host;
         self::$login = $login;
