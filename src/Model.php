@@ -1,5 +1,5 @@
 <?php
-namespace SimpleMySQL;
+namespace simpleMySQL;
 
 class Model
 {
