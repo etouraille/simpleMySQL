@@ -4,6 +4,7 @@ namespace simpleMySQL;
 class Model
 {
     protected static $db;
+    protected static $instance;
     protected $table;
     protected static $host;
     protected static $login;
@@ -29,12 +30,13 @@ class Model
 
     public function init($table)
     {
-        if(!isset(self::$db))
+        $this->table = $table;
+        if(!isset(self::$instance))
         {
-            self::$db = new Model();
+            return self::$instance = new Model();
 
         }
-        $this->table = $table;
+
     }
 
     public function add(array $tab)
@@ -50,7 +52,11 @@ class Model
 
         }
         $request = 'INSERT INTO `'.$this->table.'` ('.$fields.') VALUES ('.$values.');';
-        mysql_query($request,self::$db);
+        $result = mysql_query($request,self::$db);
+        if(!$result)
+        {
+            throw new \Exception($request.mysql_error(self::$db));
+        }
         return mysql_insert_id(self::$db);
     }
 
@@ -182,7 +188,7 @@ class Model
         $sep = '';
         foreach($cond as $field=>$keyWord)
         {
-            $string .= $sep.' `'.$field.'` '.strtoupper($keyWord);
+            $string .= $sep.' `'.$field.'` '.$keyWord.'';
             $sep = ',';
         }
         return $string;
