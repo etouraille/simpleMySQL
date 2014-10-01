@@ -61,7 +61,7 @@ class Model
     }
 
     public function e($value){
-        return mysql_real_escape_string($value,self::$db);
+        return mysql_real_escape_string(trim($value),self::$db);
     }
 
     public function getRow($cond)
