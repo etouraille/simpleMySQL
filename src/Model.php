@@ -28,6 +28,11 @@ class Model
         self::$base = $base;
     }
 
+    public function __toString()
+    {
+        return $this->table;
+    }
+
     public function init($table)
     {
         $this->table = $table;
@@ -137,12 +142,22 @@ class Model
             return false;
         }else
         {
-            return $this->create($tab);
+            return $this->add($tab);
 
         }
     }
 
-
+    public function IN($tab)
+    {
+        $return = "(";
+        $sep = '';
+        foreach($tab as $id)
+        {
+            $return.= $sep." '".$this->e($id)."' ";
+            $sep=',';
+        }
+        return $return.= ')';
+    }
 
 
     public function update($values,$conditions)
@@ -192,6 +207,15 @@ class Model
             $sep = ',';
         }
         return $string;
+    }
+
+    protected function query($query)
+    {
+        $result = mysql_query($query,self::$db);
+        if(!$result)
+        {
+            throw new \Exception($query.mysql_error(self::$db));
+        }
     }
 
 
