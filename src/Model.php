@@ -209,5 +209,14 @@ class Model
         return $string;
     }
 
+    protected function query($query)
+    {
+        $result = mysql_query($query,self::$db);
+        if(!$result)
+        {
+            throw new \Exception($query.mysql_error(self::$db));
+        }
+    }
+
 
 }
