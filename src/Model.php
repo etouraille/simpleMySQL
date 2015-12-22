@@ -216,6 +216,7 @@ class Model
         {
             throw new \Exception($query.mysql_error(self::$db));
         }
+        return mysql_fetch_assoc($result);
     }
 
 
