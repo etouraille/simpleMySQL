@@ -209,7 +209,7 @@ class Model
         return $string;
     }
 
-    protected function query($query)
+    public function query($query)
     {
         $result = mysql_query($query,self::$db);
         if(!$result)
@@ -217,6 +217,19 @@ class Model
             throw new \Exception($query.mysql_error(self::$db));
         }
         return mysql_fetch_assoc($result);
+    }
+
+    public function queryAll($query) 
+    {
+        $result = mysql_query($query,self::$db);
+        if(!$result) {
+            throw new \Exception($query.mysql_error(self::$db));
+        }
+        $return = array();
+        while($row = mysql_fetch_assoc($result)) {
+            $return[]= $row;
+        }
+        return $return;
     }
 
 
