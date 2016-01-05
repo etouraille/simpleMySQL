@@ -209,14 +209,16 @@ class Model
         return $string;
     }
 
-    public function query($query)
+    public function query($query,$return = true)
     {
         $result = mysql_query($query,self::$db);
         if(!$result)
         {
             throw new \Exception($query.mysql_error(self::$db));
         }
-        return mysql_fetch_assoc($result);
+        $ret = null;
+        if($return) $ret=mysql_fetch_assoc($result);
+        return $ret;
     }
 
     public function queryAll($query) 
