@@ -67,7 +67,7 @@ class Model
         $result = mysql_query($request,self::getConnexion());
         if(!$result)
         {
-            throw new \Exception($request.mysql_error(self::getConnexion());
+            throw new \Exception($request.mysql_error(self::getConnexion()));
         }
         return mysql_insert_id(self::getConnexion());
     }
@@ -230,7 +230,7 @@ class Model
 
     public function queryAll($query) 
     {
-        $result = mysql_query($query,self::getConnexion();
+        $result = mysql_query($query,self::getConnexion());
         if(!$result) {
             throw new \Exception($query.mysql_error(self::getConnexion()));
         }
