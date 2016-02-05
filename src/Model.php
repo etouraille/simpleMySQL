@@ -34,7 +34,7 @@ class Model
         }
         return self::$db;
     }
-/
+
     public function __toString()
     {
         return $this->table;
