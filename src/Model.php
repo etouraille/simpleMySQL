@@ -28,6 +28,13 @@ class Model
         self::$base = $base;
     }
 
+    public static function getConnexion() {
+        if(false == mysql_ping(self::$db)){
+            self::$instance = new Model();
+        }
+        return self::$db;
+    }
+/
     public function __toString()
     {
         return $this->table;
@@ -57,16 +64,16 @@ class Model
 
         }
         $request = 'INSERT INTO `'.$this->table.'` ('.$fields.') VALUES ('.$values.');';
-        $result = mysql_query($request,self::$db);
+        $result = mysql_query($request,self::getConnexion());
         if(!$result)
         {
-            throw new \Exception($request.mysql_error(self::$db));
+            throw new \Exception($request.mysql_error(self::getConnexion());
         }
-        return mysql_insert_id(self::$db);
+        return mysql_insert_id(self::getConnexion());
     }
 
     public function e($value){
-        return mysql_real_escape_string(trim($value),self::$db);
+        return mysql_real_escape_string(trim($value),self::getConnexion());
     }
 
     public function getRow($cond)
@@ -80,10 +87,10 @@ class Model
         }
 
         $query = 'SELECT * FROM `'.$this->table.'` WHERE '.$where;
-        $result = mysql_query($query,self::$db);
+        $result = mysql_query($query,self::getConnexion());
         if(!$result)
         {
-            throw new \Exception($query.mysql_error(self::$db));
+            throw new \Exception($query.mysql_error(self::getConnexion()));
         }
         $row = mysql_fetch_assoc($result);
         return $row;
@@ -95,10 +102,10 @@ class Model
         $orderBy = $this->getOrderCondition($orderBy);
         if(count($cond)== 0) $where = '';
         $query = sprintf("SELECT * FROM `{$this->table}` %s %s %s",$where,$this->getConditionsQuery($cond),$orderBy);
-        $result = mysql_query($query,self::$db);
+        $result = mysql_query($query,self::getConnexion());
         if(!$result)
         {
-            throw new \Exception($query.' '.mysql_error(self::$db));
+            throw new \Exception($query.' '.mysql_error(self::getConnexion()));
         }
         $return =array();
         while($row = mysql_fetch_assoc($result))
@@ -110,20 +117,20 @@ class Model
 
     public function getRowFromQuery($query)
     {
-        $result = mysql_query($query,self::$db);
+        $result = mysql_query($query,self::getConnexion());
         if(!$result)
         {
-            throw new \Exception($query.mysql_error(self::$db));
+            throw new \Exception($query.mysql_error(self::getConnexion()));
         }
         return mysql_fetch_assoc($result);
     }
 
     public function getRowsFromQuery($query)
     {
-        $result = mysql_query($query,self::$db);
+        $result = mysql_query($query,self::getConnexion());
         if(!$result)
         {
-            throw new \Exception($query.mysql_error(self::$db));
+            throw new \Exception($query.mysql_error(self::getConnexion()));
         }
         $return = array();
         while($row = mysql_fetch_assoc($result))
@@ -171,13 +178,13 @@ class Model
         }
         $where = $this->getConditionsQuery($conditions);
         $query = 'UPDATE `'.$this->table.'` SET '.$set.'WHERE '.$where;
-        mysql_query($query,self::$db);
+        mysql_query($query,self::getConnexion());
     }
 
     public function delete($cond)
     {
         $query = sprintf("DELETE FROM `{$this->table}` WHERE %s",$this->getConditionsQuery($cond));
-        mysql_query($query,self::$db);
+        mysql_query($query,self::getConnexion());
     }
 
     protected function getConditionsQuery($conditions)
@@ -211,10 +218,10 @@ class Model
 
     public function query($query,$return = true)
     {
-        $result = mysql_query($query,self::$db);
+        $result = mysql_query($query,self::getConnexion());
         if(!$result)
         {
-            throw new \Exception($query.mysql_error(self::$db));
+            throw new \Exception($query.mysql_error(self::getConnexion()));
         }
         $ret = null;
         if($return) $ret=mysql_fetch_assoc($result);
@@ -223,9 +230,9 @@ class Model
 
     public function queryAll($query) 
     {
-        $result = mysql_query($query,self::$db);
+        $result = mysql_query($query,self::getConnexion();
         if(!$result) {
-            throw new \Exception($query.mysql_error(self::$db));
+            throw new \Exception($query.mysql_error(self::getConnexion()));
         }
         $return = array();
         while($row = mysql_fetch_assoc($result)) {
