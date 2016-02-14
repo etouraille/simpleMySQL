@@ -11,6 +11,8 @@ class Model
     protected static $pass;
     protected static $base;
 
+    protected $actions = array();
+
     private function __construct()
     {
 
@@ -18,6 +20,18 @@ class Model
         mysql_select_db(self::$base,self::$db);
         mysql_query('SET NAMES UTF8');
 
+    }
+
+    public function kill() {
+	mysql_close(self::$db);
+    }
+
+    public function log(){
+	$ret = '';
+	foreach($this->actions as $log) {
+		$ret .= $log."\n";
+	}
+	return $ret;
     }
 
     public static function setParams($host,$login,$pass,$base)
@@ -29,8 +43,8 @@ class Model
     }
 
     public static function getConnexion() {
-        if(false == mysql_ping(self::$db)){
-            self::$instance = new Model();
+	if(false == @mysql_ping(self::$db)){
+	     self::$instance = new Model();
         }
         return self::$db;
     }
@@ -64,7 +78,8 @@ class Model
 
         }
         $request = 'INSERT INTO `'.$this->table.'` ('.$fields.') VALUES ('.$values.');';
-        $result = mysql_query($request,self::getConnexion());
+        $this->actions[] = $request;
+	$result = mysql_query($request,self::getConnexion());
         if(!$result)
         {
             throw new \Exception($request.mysql_error(self::getConnexion()));
@@ -87,7 +102,8 @@ class Model
         }
 
         $query = 'SELECT * FROM `'.$this->table.'` WHERE '.$where;
-        $result = mysql_query($query,self::getConnexion());
+        $this->actions[] = $query;
+	$result = mysql_query($query,self::getConnexion());
         if(!$result)
         {
             throw new \Exception($query.mysql_error(self::getConnexion()));
@@ -102,7 +118,8 @@ class Model
         $orderBy = $this->getOrderCondition($orderBy);
         if(count($cond)== 0) $where = '';
         $query = sprintf("SELECT * FROM `{$this->table}` %s %s %s",$where,$this->getConditionsQuery($cond),$orderBy);
-        $result = mysql_query($query,self::getConnexion());
+        $this->actions[] = $query;
+	$result = mysql_query($query,self::getConnexion());
         if(!$result)
         {
             throw new \Exception($query.' '.mysql_error(self::getConnexion()));
@@ -117,7 +134,8 @@ class Model
 
     public function getRowFromQuery($query)
     {
-        $result = mysql_query($query,self::getConnexion());
+        $this->actions[] = $query;
+	$result = mysql_query($query,self::getConnexion());
         if(!$result)
         {
             throw new \Exception($query.mysql_error(self::getConnexion()));
@@ -127,7 +145,8 @@ class Model
 
     public function getRowsFromQuery($query)
     {
-        $result = mysql_query($query,self::getConnexion());
+        $this->actions[] = $query;
+	$result = mysql_query($query,self::getConnexion());
         if(!$result)
         {
             throw new \Exception($query.mysql_error(self::getConnexion()));
@@ -178,13 +197,15 @@ class Model
         }
         $where = $this->getConditionsQuery($conditions);
         $query = 'UPDATE `'.$this->table.'` SET '.$set.'WHERE '.$where;
-        mysql_query($query,self::getConnexion());
+        $this->actions[] = $query;
+	mysql_query($query,self::getConnexion());
     }
 
     public function delete($cond)
     {
         $query = sprintf("DELETE FROM `{$this->table}` WHERE %s",$this->getConditionsQuery($cond));
-        mysql_query($query,self::getConnexion());
+        $this->actions[] = $query;
+	mysql_query($query,self::getConnexion());
     }
 
     protected function getConditionsQuery($conditions)
@@ -218,7 +239,8 @@ class Model
 
     public function query($query,$return = true)
     {
-        $result = mysql_query($query,self::getConnexion());
+        $this->actions[] = $query;
+	$result = mysql_query($query,self::getConnexion());
         if(!$result)
         {
             throw new \Exception($query.mysql_error(self::getConnexion()));
@@ -230,7 +252,8 @@ class Model
 
     public function queryAll($query) 
     {
-        $result = mysql_query($query,self::getConnexion());
+        $this->actions[] = $query;
+	$result = mysql_query($query,self::getConnexion());
         if(!$result) {
             throw new \Exception($query.mysql_error(self::getConnexion()));
         }
