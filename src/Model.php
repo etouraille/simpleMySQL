@@ -11,19 +11,68 @@ class Model
     protected static $pass;
     protected static $base;
 
+    protected static $isPDO;
+
     protected $actions = array();
 
     private function __construct()
     {
 
+        if(self::$withPDO) {
+            $this->constructWithPDO();
+        } else {
+            $this->constructClassical();
+        }
+    }
+
+
+    private function constructWithPDO() {
+
+        $dsn = sprintf(
+                'mysql:host=%s;dbname=%s', 
+                self::$host, 
+                self::$base
+            );
+        
+        try {
+
+           self::$db = new \PDO( 
+                $dsn,
+                self::$login, 
+                self::$pass 
+            );
+
+           self::$db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        
+        } catch( Exception $e ) {
+          
+          die('Erreur : '.$e->getMessage());
+        
+        }
+
+    }
+
+    private function constructClassical() {
         self::$db = mysql_connect(self::$host,self::$login,self::$pass);
         mysql_select_db(self::$base,self::$db);
         mysql_query('SET NAMES UTF8');
 
+    }  
+
+    private function killPDO {
+        self::$db = null;
+    }
+
+    private function killClassical() {
+       mysql_close(self::$db); 
     }
 
     public function kill() {
-	mysql_close(self::$db);
+       if(self::$withPDO) {
+            $this->killPDO();
+       } else {
+            $this->killClassical();
+       }
     }
 
     public function log(){
@@ -34,19 +83,40 @@ class Model
 	return $ret;
     }
 
-    public static function setParams($host,$login,$pass,$base)
+    public static function setParams($host,$login,$pass,$base, $isPDO = true )
     {
         self::$host = $host;
         self::$login = $login;
         self::$pass = $pass;
         self::$base = $base;
+        self::$isPDO = $isPDO;
     }
 
-    public static function getConnexion() {
-	if(false == @mysql_ping(self::$db)){
-	     self::$instance = new Model();
+    private function getConnexionPDO() {
+        try {
+            self::$db->pdo->query('SELECT 1');
+        } catch (\PDOException $e) {
+            self::$instance = new Model();            // Don't catch exception here, so that re-connect fail will throw exception
         }
         return self::$db;
+    }
+
+
+    private static function getConnexionClassical() {
+	   if( false == @mysql_ping( self::$db ) ) {
+	       self::$instance = new Model();
+       }
+        return self::$db;
+    }
+
+    public function getConnexion() {
+        if( self::$withPDO ) {
+            return 
+                $this->getConnexionPDO();
+        } else {
+            return 
+                $this->getConnexionClassical();
+        }
     }
 
     public function __toString()
@@ -57,15 +127,16 @@ class Model
     public function init($table)
     {
         $this->table = $table;
-        if(!isset(self::$instance))
-        {
-            return self::$instance = new Model();
-
+        
+        if( !isset( self::$instance ) ) {
+            self::$instance = new Model();
         }
+        return 
+            self::$insatance;
 
     }
 
-    public function add(array $tab)
+    private function addClassical( array $tab )
     {
         $fields = '';
         $sep = '';
@@ -79,7 +150,7 @@ class Model
         }
         $request = 'INSERT INTO `'.$this->table.'` ('.$fields.') VALUES ('.$values.');';
         $this->actions[] = $request;
-	$result = mysql_query($request,self::getConnexion());
+	    $result = mysql_query($request,self::getConnexion());
         if(!$result)
         {
             throw new \Exception($request.mysql_error(self::getConnexion()));
@@ -87,11 +158,54 @@ class Model
         return mysql_insert_id(self::getConnexion());
     }
 
+    private function addPDO( array $tab ) {
+
+        $fields = '';
+        $sep ='';
+        $values = '';
+        foreach( $tab as $field => $value ) {
+            
+            $fields .= $sep. ' .$field. ';
+            $values .= $sep.' :.$field. ';
+            $sep = ',';
+
+        }
+        
+        $request = "INSERT INTO `".$this->table."` (".$fields.") VALUES (".$values.");";
+        
+        $con = self::getConnexion();
+
+        $stmt = self::$con
+            ->prepare( $request )
+        ;
+        foreach( $tab as $field => $value ) {
+            $stmt
+                ->bindParam(':'.$field , $value )
+            ;
+        }
+        $stmt
+            ->execute()
+        ;
+
+        return 
+            $con::lastInsertId()
+        ;
+    }
+
+    public function add( array $tab )
+    {
+        if (self::$isPDO ) {
+            return $this->addPDO( $tab );
+        } else {
+            return $this->addClassical( $tab );
+        }
+    }
+
     public function e($value){
         return mysql_real_escape_string(trim($value),self::getConnexion());
     }
 
-    public function getRow($cond)
+    public function getRow($cond) 
     {
         $where = '';
         $sep = '';
