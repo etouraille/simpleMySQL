@@ -59,7 +59,7 @@ class Model
 
     }  
 
-    private function killPDO {
+    private function killPDO () {
         self::$db = null;
     }
 
@@ -94,7 +94,7 @@ class Model
 
     private function getConnexionPDO() {
         try {
-            self::$db->pdo->query('SELECT 1');
+            self::$db->query('SELECT 1');
         } catch (\PDOException $e) {
             self::$instance = new Model();            // Don't catch exception here, so that re-connect fail will throw exception
         }
@@ -132,7 +132,7 @@ class Model
             self::$instance = new Model();
         }
         return 
-            self::$insatance;
+            self::$instance;
 
     }
 
@@ -175,7 +175,7 @@ class Model
         
         $con = self::getConnexion();
 
-        $stmt = self::$con
+        $stmt = $con
             ->prepare( $request )
         ;
         foreach( $tab as $field => $value ) {
@@ -243,7 +243,7 @@ class Model
 
         $con = self::getConnexion();
 
-        $stmt = self::$con
+        $stmt = $con
             ->prepare( $query )
         ;
         foreach( $cond as $field => $value ) {
@@ -296,7 +296,7 @@ class Model
 
         $con = self::getConnexion();
 
-        $stmt = self::$con
+        $stmt = $con
             ->prepare( $query )
         ;
         foreach( $cond as $field => $value ) {
@@ -351,7 +351,7 @@ class Model
         
         $con = self::getConnexion();
 
-        $stmt = self::$con
+        $stmt = $con
             ->prepare( $query )
         ;
         foreach( $cond as $field => $value ) {
@@ -373,7 +373,7 @@ class Model
         
         $con = self::getConnexion();
 
-        $stmt = self::$con
+        $stmt = $con
             ->prepare( $query )
         ;
         foreach( $cond as $field => $value ) {
@@ -471,7 +471,7 @@ class Model
         
         $con = self::getConnexion();
 
-        $stmt = self::$con
+        $stmt = $con
             ->prepare( $query )
         ;
 
@@ -524,7 +524,7 @@ class Model
         
         $con = self::getConnexion();
 
-        $stmt = self::$con
+        $stmt = $con
             ->prepare( $query )
         ;
 
@@ -621,7 +621,7 @@ class Model
 
         $con = self::getConnexion();
 
-        $stmt = self::$con
+        $stmt = $con
             ->prepare( $query )
         ;
 
@@ -684,7 +684,7 @@ class Model
 
         $con = self::getConnexion();
 
-        $stmt = self::$con
+        $stmt = $con
             ->prepare( $query )
         ;
 
