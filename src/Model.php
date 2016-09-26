@@ -18,7 +18,7 @@ class Model
     private function __construct()
     {
 
-        if(self::$withPDO) {
+        if(self::$isPDO) {
             $this->constructWithPDO();
         } else {
             $this->constructClassical();
@@ -68,7 +68,7 @@ class Model
     }
 
     public function kill() {
-       if(self::$withPDO) {
+       if(self::$isPDO) {
             $this->killPDO();
        } else {
             $this->killClassical();
@@ -110,7 +110,7 @@ class Model
     }
 
     public function getConnexion() {
-        if( self::$withPDO ) {
+        if( self::$isPDO ) {
             return 
                 $this->getConnexionPDO();
         } else {
@@ -201,12 +201,12 @@ class Model
         }
     }
 
-    public function e($value){
+    public function e( $value ) {
+        if( self:: $isPDO ) return $value;
         return mysql_real_escape_string(trim($value),self::getConnexion());
     }
 
-    public function getRow($cond) 
-    {
+    private function getRowClassical( $cond ) {
         $where = '';
         $sep = '';
         foreach($cond as $key => $value)
@@ -216,8 +216,11 @@ class Model
         }
 
         $query = 'SELECT * FROM `'.$this->table.'` WHERE '.$where;
+        
         $this->actions[] = $query;
-	$result = mysql_query($query,self::getConnexion());
+        
+        $result = mysql_query($query,self::getConnexion());
+        
         if(!$result)
         {
             throw new \Exception($query.mysql_error(self::getConnexion()));
@@ -226,14 +229,51 @@ class Model
         return $row;
     }
 
-    public function getRows($cond,$orderBy = array())
-    {
+    private function getRowPDO( $cond ) {
+        $where = '';
+        $sep = '';
+        foreach($cond as $key => $value)
+        {
+            $where .= $sep.' '.$key.' = :'.$key.' ';
+            $sep = 'AND';
+        }
+
+        $query = 'SELECT * FROM `'.$this->table.'` WHERE '.$where;
+        $this->actions[] = $query;
+
+        $con = self::getConnexion();
+
+        $stmt = self::$con
+            ->prepare( $query )
+        ;
+        foreach( $cond as $field => $value ) {
+            $stmt
+                ->bindParam(':'.$field , $value )
+            ;
+        }
+        $stmt
+            ->execute()
+        ;
+        $row = $stmt->fetch();
+        return $row;
+    }
+
+    public function getRow( $cond ) {
+        if( self::$isPDO ) {
+            return $this->getRowPDO( $cond );
+        } else {
+            return $this->getRowClassical( $cond );
+        }
+    }
+
+    private function getRowsClassical( $cond, $orderBy = array() ) {
+        
         $where = 'WHERE';
         $orderBy = $this->getOrderCondition($orderBy);
         if(count($cond)== 0) $where = '';
         $query = sprintf("SELECT * FROM `{$this->table}` %s %s %s",$where,$this->getConditionsQuery($cond),$orderBy);
         $this->actions[] = $query;
-	$result = mysql_query($query,self::getConnexion());
+        $result = mysql_query($query,self::getConnexion());
         if(!$result)
         {
             throw new \Exception($query.' '.mysql_error(self::getConnexion()));
@@ -246,10 +286,42 @@ class Model
         return $return;
     }
 
-    public function getRowFromQuery($query)
-    {
+    private function getRowsPDO( $cond, $orderBy = array() ) {
+        
+        $where = 'WHERE';
+        $orderBy = $this->getOrderCondition( $orderBy );
+        if(count($cond)== 0) $where = '';
+        $query = sprintf("SELECT * FROM `{$this->table}` %s %s %s", $where, $this->getConditionsQuery( $cond ), $orderBy);
         $this->actions[] = $query;
-	$result = mysql_query($query,self::getConnexion());
+
+        $con = self::getConnexion();
+
+        $stmt = self::$con
+            ->prepare( $query )
+        ;
+        foreach( $cond as $field => $value ) {
+            $stmt
+                ->bindParam(':'.$field , $value )
+            ;
+        }
+        $stmt
+            ->execute()
+        ;
+        $rows = $stmt->fetchAll();
+        return $rows;
+    }
+
+    public function getRows( $cond, $orderBy = array() ) {
+        if( self::$isPDO ) {
+            return $this->getRowsPDO( $cond, $orderBy );
+        } else {
+            return $this->getRowsClassical( $cond, $orderBy );
+        }
+    }
+
+    private function getRowFromQueryClassical($query) {
+        $this->actions[] = $query;
+        $result = mysql_query($query,self::getConnexion());
         if(!$result)
         {
             throw new \Exception($query.mysql_error(self::getConnexion()));
@@ -257,7 +329,7 @@ class Model
         return mysql_fetch_assoc($result);
     }
 
-    public function getRowsFromQuery($query)
+    private function getRowsFromQueryClassical($query)
     {
         $this->actions[] = $query;
 	$result = mysql_query($query,self::getConnexion());
@@ -273,6 +345,75 @@ class Model
         return $return;
     }
 
+    private function getRowFromQueryPDO( $query ) {
+        
+        $this->actions[] = $query;
+        
+        $con = self::getConnexion();
+
+        $stmt = self::$con
+            ->prepare( $query )
+        ;
+        foreach( $cond as $field => $value ) {
+            $stmt
+                ->bindParam(':'.$field , $value )
+            ;
+        }
+        $stmt
+            ->execute()
+        ;
+        $row = $stmt->fetch();
+        return $row;
+
+    }
+
+    private function getRowsFromQueryPDO( $query ) {
+        
+        $this->actions[] = $query;
+        
+        $con = self::getConnexion();
+
+        $stmt = self::$con
+            ->prepare( $query )
+        ;
+        foreach( $cond as $field => $value ) {
+            $stmt
+                ->bindParam(':'.$field , $value )
+            ;
+        }
+        $stmt
+            ->execute()
+        ;
+        $rows = $stmt->fetchAll();
+        return $rows;
+
+    }
+
+    public function getRowFromQuery( $query ) {
+        if ( self::$isPDO ) {
+            return 
+                $this->getRowFromQueryPDO( $query )
+            ;
+        } else {
+            return 
+                $this->getRowFromQueryClassical( $query )
+            ;
+        }
+    }
+
+    public function getRowsFromQuery( $query ) {
+        if ( self::$isPDO ) {
+            return 
+                $this->getRowsFromQueryPDO( $query )
+            ;
+        } else {
+            return 
+                $this->getRowsFromQueryClassical( $query )
+            ;
+        }
+    }
+
+
     public function createUpdate($tab,$cond)
     {
         $row = $this->getRow($cond);
@@ -287,7 +428,7 @@ class Model
         }
     }
 
-    public function IN($tab)
+    public function IN( $tab )
     {
         $return = "(";
         $sep = '';
@@ -300,8 +441,7 @@ class Model
     }
 
 
-    public function update($values,$conditions)
-    {
+    private function updateClassical( $values, $conditions ) {
         $set ='';
         $separatorSet = '';
         foreach($values as $key => $value)
@@ -312,30 +452,136 @@ class Model
         $where = $this->getConditionsQuery($conditions);
         $query = 'UPDATE `'.$this->table.'` SET '.$set.'WHERE '.$where;
         $this->actions[] = $query;
-	mysql_query($query,self::getConnexion());
+        mysql_query($query,self::getConnexion());
     }
 
-    public function delete($cond)
-    {
-        $query = sprintf("DELETE FROM `{$this->table}` WHERE %s",$this->getConditionsQuery($cond));
+    private function updatePDO( $values, $conditions ) {
+        
+        $set ='';
+        $separatorSet = '';
+        foreach($values as $key => $value)
+        {
+            $set .= $separatorSet. ' `'.$key.'` = :'.$key.' ';
+            $separatorSet = ',';
+        }
+        $where = $this->getConditionsQuery( $conditions );
+        
+
+        $query = 'UPDATE `'.$this->table.'` SET '.$set.'WHERE '.$where;
+        
+        $con = self::getConnexion();
+
+        $stmt = self::$con
+            ->prepare( $query )
+        ;
+
+        $bindable = array_merge( $values , $conditions );
+
+        foreach( $bindable as $field => $value ) {
+            $stmt
+                ->bindParam(':'.$field , $value )
+            ;
+        }
+        $stmt
+            ->execute()
+        ;
+        
         $this->actions[] = $query;
-	mysql_query($query,self::getConnexion());
+        
     }
 
-    protected function getConditionsQuery($conditions)
-    {
+    public function update( $values, $conditions ) {
+        
+        if ( self::$isPDO ) {
+            
+            return 
+                $this
+                    ->updatePDO( $values, $conditions );
+        } else {
+            
+            return 
+                $this
+                    ->updateClassical( $value, $onditions );
+        }
+
+    }
+
+    private function deleteClassical ( $cond ) {
+
+        $query = sprintf("DELETE FROM `{$this->table}` WHERE %s",$this->getConditionsQuery($cond));
+        
+        $this->actions[] = $query;
+        
+        mysql_query($query,self::getConnexion());
+    
+    }
+
+    private function deletePDO ( $cond ) {
+
+        $query = sprintf("DELETE FROM `{$this->table}` WHERE %s",$this->getConditionsQuery($cond));
+        
+        $this->actions[] = $query;
+        
+        $con = self::getConnexion();
+
+        $stmt = self::$con
+            ->prepare( $query )
+        ;
+
+        $bindable = $cond;
+
+        foreach( $bindable as $field => $value ) {
+            $stmt
+                ->bindParam(':'.$field , $value )
+            ;
+        }
+        $stmt
+            ->execute()
+        ;
+    
+    }
+
+    public function delete ( $cond ) {
+
+        if (self::$isPDO ) {
+            return 
+                $this
+                    ->deletePDO( $cond )
+            ;
+        } else {
+            return 
+                $this
+                    ->deleteClassical( $cond)
+            ;
+        }
+
+    }
+
+    protected function getConditionsQuery( $conditions ) {
+        
         $where = '';
+        
         $separatorWhere = '';
 
-        foreach($conditions as $key => $value){
-            $where .= $separatorWhere.' `'.$key.'` = \''.$this->e($value).'\' ';
-            $separatorWhere = 'AND';
+        if(self::$isPDO) {
+
+            foreach($conditions as $key => $value){
+                $where .= $separatorWhere.' '.$key.' = :'.$key.' ';
+                $separatorWhere = 'AND';
+            }
+
+        } else {
+
+            foreach($conditions as $key => $value){
+                $where .= $separatorWhere.' `'.$key.'` = \''.$this->e($value).'\' ';
+                $separatorWhere = 'AND';
+            }
         }
 
         return $where;
     }
 
-    protected function getOrderCondition(array $cond){
+    protected function getOrderCondition( array $cond ) {
 
         if(count($cond) == 0)
         {
@@ -351,32 +597,133 @@ class Model
         return $string;
     }
 
-    public function query($query,$return = true)
-    {
+    private function queryClassical ( $query, $return = true ) {
+        
         $this->actions[] = $query;
-	$result = mysql_query($query,self::getConnexion());
+
+        $result = mysql_query($query,self::getConnexion());
+        
         if(!$result)
         {
             throw new \Exception($query.mysql_error(self::getConnexion()));
         }
+        
         $ret = null;
+        
         if($return) $ret=mysql_fetch_assoc($result);
+        
         return $ret;
     }
 
-    public function queryAll($query) 
-    {
+    private function queryPDO( $query, $return = true ) {
+        
         $this->actions[] = $query;
-	$result = mysql_query($query,self::getConnexion());
+
+        $con = self::getConnexion();
+
+        $stmt = self::$con
+            ->prepare( $query )
+        ;
+
+        $bindable = [];
+
+        foreach( $bindable as $field => $value ) {
+            $stmt
+                ->bindParam(':'.$field , $value )
+            ;
+        }
+        $stmt
+            ->execute()
+        ;
+
+        $ret = null;
+        
+        if( $return ) $ret=$stmt->fetch();
+        
+        return $ret;
+    }
+
+    public function query ( $cond ) {
+
+        if ( self::$isPDO ) {
+            return 
+                $this
+                    ->queryPDO( $cond )
+            ;
+        } else {
+            return 
+                $this
+                    ->queryClassical( $cond)
+            ;
+        }
+
+    }
+
+    private function queryAllClassical( $query ) {
+        
+        $this->actions[] = $query;
+
+        $result = mysql_query($query,self::getConnexion());
+        
         if(!$result) {
             throw new \Exception($query.mysql_error(self::getConnexion()));
         }
+        
         $return = array();
+        
         while($row = mysql_fetch_assoc($result)) {
             $return[]= $row;
         }
+        
         return $return;
     }
 
+    private function queryAllPDO( $query ) {
+        
+        $this->actions[] = $query;
+
+        $con = self::getConnexion();
+
+        $stmt = self::$con
+            ->prepare( $query )
+        ;
+
+        $bindable = [];
+
+        foreach( $bindable as $field => $value ) {
+            $stmt
+                ->bindParam(':'.$field , $value )
+            ;
+        }
+        $stmt
+            ->execute()
+        ;
+
+        $ret = [];
+        
+        while( $row = $stmt->fetch() ) {
+            $ret[] = $row;
+        }
+        
+        return $ret;
+    }
+
+    public function queryAll ( $cond ) {
+
+        if ( self::$isPDO ) {
+            return 
+                $this
+                    ->queryAllPDO( $cond )
+            ;
+        } else {
+            return 
+                $this
+                    ->queryAllClassical( $cond)
+            ;
+        }
+
+    }
+
+    
 
 }
