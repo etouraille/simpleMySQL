@@ -19,6 +19,7 @@ class Model
     {
 
         if(self::$isPDO) {
+            echo 'construct with pdo';
             $this->constructWithPDO();
         } else {
             $this->constructClassical();
@@ -59,12 +60,13 @@ class Model
 
     }  
 
+    
     private function killPDO () {
         self::$db = null;
     }
 
     private function killClassical() {
-       mysql_close(self::$db); 
+       mysql_close( self::$db ); 
     }
 
     public function kill() {
@@ -74,6 +76,7 @@ class Model
             $this->killClassical();
        }
     }
+    
 
     public function log(){
 	$ret = '';
@@ -93,10 +96,11 @@ class Model
     }
 
     private function getConnexionPDO() {
+        if( is_null( self::$db ) ) self::$instance = new Model();            // Don't catch exception here, so that re-connect fail will throw exception
         try {
             self::$db->query('SELECT 1');
         } catch (\PDOException $e) {
-            self::$instance = new Model();            // Don't catch exception here, so that re-connect fail will throw exception
+        
         }
         return self::$db;
     }
@@ -124,7 +128,7 @@ class Model
         return $this->table;
     }
 
-    public function init($table)
+    public function init( $table )
     {
         $this->table = $table;
         
