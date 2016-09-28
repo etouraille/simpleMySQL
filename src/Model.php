@@ -19,7 +19,6 @@ class Model
     {
 
         if(self::$isPDO) {
-            echo 'construct with pdo';
             $this->constructWithPDO();
         } else {
             $this->constructClassical();
@@ -44,6 +43,7 @@ class Model
             );
 
            self::$db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+           self::$db->query('SET NAMES UTF8');
         
         } catch( Exception $e ) {
           
