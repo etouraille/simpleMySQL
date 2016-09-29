@@ -169,8 +169,8 @@ class Model
         $values = '';
         foreach( $tab as $field => $value ) {
             
-            $fields .= $sep. ' .$field. ';
-            $values .= $sep.' :.$field. ';
+            $fields .= $sep.'  '.$field.' ';
+            $values .= $sep.' :'.$field.' ';
             $sep = ',';
 
         }
@@ -182,7 +182,7 @@ class Model
         $stmt = $con
             ->prepare( $request )
         ;
-        foreach( $tab as $field => $value ) {
+        foreach( $tab as $field => &$value ) {
             $stmt
                 ->bindParam(':'.$field , $value )
             ;
@@ -192,7 +192,7 @@ class Model
         ;
 
         return 
-            $con::lastInsertId()
+            $con->lastInsertId()
         ;
     }
 
@@ -250,7 +250,7 @@ class Model
         $stmt = $con
             ->prepare( $query )
         ;
-        foreach( $cond as $field => $value ) {
+        foreach( $cond as $field => &$value ) {
             $stmt
                 ->bindParam(':'.$field , $value )
             ;
@@ -303,7 +303,7 @@ class Model
         $stmt = $con
             ->prepare( $query )
         ;
-        foreach( $cond as $field => $value ) {
+        foreach( $cond as $field => &$value ) {
             $stmt
                 ->bindParam(':'.$field , $value )
             ;
@@ -358,7 +358,7 @@ class Model
         $stmt = $con
             ->prepare( $query )
         ;
-        foreach( $cond as $field => $value ) {
+        foreach( $cond as $field => &$value ) {
             $stmt
                 ->bindParam(':'.$field , $value )
             ;
@@ -380,7 +380,7 @@ class Model
         $stmt = $con
             ->prepare( $query )
         ;
-        foreach( $cond as $field => $value ) {
+        foreach( $cond as $field => &$value ) {
             $stmt
                 ->bindParam(':'.$field , $value )
             ;
@@ -463,15 +463,18 @@ class Model
         
         $set ='';
         $separatorSet = '';
+
         foreach($values as $key => $value)
         {
-            $set .= $separatorSet. ' `'.$key.'` = :'.$key.' ';
+            $set .= $separatorSet. ' '.$key.' =:'.$key.' ';
             $separatorSet = ',';
         }
         $where = $this->getConditionsQuery( $conditions );
+
+
         
 
-        $query = 'UPDATE `'.$this->table.'` SET '.$set.'WHERE '.$where;
+        $query = 'UPDATE '.$this->table.' SET '.$set.'WHERE '.$where;
         
         $con = self::getConnexion();
 
@@ -481,7 +484,8 @@ class Model
 
         $bindable = array_merge( $values , $conditions );
 
-        foreach( $bindable as $field => $value ) {
+        foreach( $bindable as $field => &$value ) {
+            
             $stmt
                 ->bindParam(':'.$field , $value )
             ;
@@ -489,7 +493,6 @@ class Model
         $stmt
             ->execute()
         ;
-        
         $this->actions[] = $query;
         
     }
@@ -534,7 +537,7 @@ class Model
 
         $bindable = $cond;
 
-        foreach( $bindable as $field => $value ) {
+        foreach( $bindable as $field => &$value ) {
             $stmt
                 ->bindParam(':'.$field , $value )
             ;
@@ -570,7 +573,7 @@ class Model
         if(self::$isPDO) {
 
             foreach($conditions as $key => $value){
-                $where .= $separatorWhere.' '.$key.' = :'.$key.' ';
+                $where .= $separatorWhere.' '.$key.' =:'.$key.' ';
                 $separatorWhere = 'AND';
             }
 
@@ -631,7 +634,7 @@ class Model
 
         $bindable = [];
 
-        foreach( $bindable as $field => $value ) {
+        foreach( $bindable as $field => &$value ) {
             $stmt
                 ->bindParam(':'.$field , $value )
             ;
@@ -694,7 +697,7 @@ class Model
 
         $bindable = [];
 
-        foreach( $bindable as $field => $value ) {
+        foreach( $bindable as $field => &$value ) {
             $stmt
                 ->bindParam(':'.$field , $value )
             ;
