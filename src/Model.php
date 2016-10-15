@@ -10,6 +10,7 @@ class Model
     protected static $login;
     protected static $pass;
     protected static $base;
+    protected static $port;
 
     protected static $isPDO;
 
@@ -29,9 +30,10 @@ class Model
     private function constructWithPDO() {
 
         $dsn = sprintf(
-                'mysql:host=%s;dbname=%s', 
+                'mysql:host=%s;dbname=%s;port=%s', 
                 self::$host, 
-                self::$base
+                self::$base,
+                self::$port
             );
         
         try {
@@ -86,12 +88,13 @@ class Model
 	return $ret;
     }
 
-    public static function setParams($host,$login,$pass,$base, $isPDO = true )
+    public static function setParams($host,$login,$pass,$base, $port= 3306, $isPDO = true )
     {
         self::$host = $host;
         self::$login = $login;
         self::$pass = $pass;
         self::$base = $base;
+        self::$port = $port;
         self::$isPDO = $isPDO;
     }
 
@@ -650,17 +653,17 @@ class Model
         return $ret;
     }
 
-    public function query ( $cond ) {
+    public function query ( $cond , $return = true) {
 
         if ( self::$isPDO ) {
             return 
                 $this
-                    ->queryPDO( $cond )
+                    ->queryPDO( $cond , $return)
             ;
         } else {
             return 
                 $this
-                    ->queryClassical( $cond)
+                    ->queryClassical( $cond, $return )
             ;
         }
 
