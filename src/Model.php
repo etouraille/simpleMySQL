@@ -361,11 +361,6 @@ class Model
         $stmt = $con
             ->prepare( $query )
         ;
-        foreach( $cond as $field => &$value ) {
-            $stmt
-                ->bindParam(':'.$field , $value )
-            ;
-        }
         $stmt
             ->execute()
         ;
